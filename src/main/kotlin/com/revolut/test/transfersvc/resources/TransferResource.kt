@@ -1,23 +1,25 @@
 package com.revolut.test.transfersvc.resources
 
-import com.revolut.test.transfersvc.resources.TransferResource.Companion.HELLO_WORLD_PATH
-import javax.ws.rs.GET
+import com.revolut.test.transfersvc.domain.TransferRequest
+import com.revolut.test.transfersvc.domain.TransferResult
+import com.revolut.test.transfersvc.domain.TransferSuccessful
+import com.revolut.test.transfersvc.resources.TransferResource.Companion.TRANSFER_RESOURCE_PATH
+import javax.validation.Valid
+import javax.ws.rs.POST
 import javax.ws.rs.Path
 import javax.ws.rs.Produces
 import javax.ws.rs.core.MediaType
 
-@Path(HELLO_WORLD_PATH)
+@Path(TRANSFER_RESOURCE_PATH)
 @Produces(MediaType.APPLICATION_JSON)
 class TransferResource {
 
     companion object {
-        const val HELLO_WORLD_PATH: String = "/helloworld"
+        const val TRANSFER_RESOURCE_PATH: String = "/transfers"
     }
 
-    //TODO :: remove this
-    @GET
-    fun hello(): String {
-        return "Hello World!"
+    @POST
+    fun transfer(@Valid transferRequest: TransferRequest): TransferResult {
+        return TransferSuccessful("Success!")
     }
-
 }
