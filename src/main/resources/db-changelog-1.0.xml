@@ -46,6 +46,7 @@
             <column name="issued_at" type="timestamp">
                 <constraints nullable="false"/>
             </column>
+            <column name="reference" type="varchar2(255)"/>
         </createTable>
     </changeSet>
 

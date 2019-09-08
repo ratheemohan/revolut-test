@@ -19,8 +19,13 @@ internal class DefaultTransferService(private val dbi: DBI) : TransferService {
     }
 
     override fun transfer(transferRequest: TransferRequest): TransferResult {
-        log.info("Transfer request $transferRequest")
+        log.info("Processing transfer request $transferRequest")
+//        return dbi.inTransaction { conn: Handle, status: TransactionStatus ->
+//            TODO()
+//        }
+
         return TransferSuccessful("Success")
+
     }
 
 }
