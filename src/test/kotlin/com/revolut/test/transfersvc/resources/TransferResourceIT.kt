@@ -2,12 +2,13 @@ package com.revolut.test.transfersvc.resources
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.KotlinModule
-import com.revolut.test.transfersvc.TransferService
+import com.revolut.test.transfersvc.TransferApplication
 import com.revolut.test.transfersvc.domain.SortCodeAccountNumber
 import com.revolut.test.transfersvc.domain.TransferRequest
 import com.revolut.test.transfersvc.domain.TransferResult
 import com.revolut.test.transfersvc.domain.TransferSuccessful
 import com.revolut.test.transfersvc.resources.TransferResource.Companion.TRANSFER_RESOURCE_PATH
+import io.dropwizard.testing.ResourceHelpers
 import io.dropwizard.testing.junit5.DropwizardAppExtension
 import io.dropwizard.testing.junit5.DropwizardExtensionsSupport
 import org.assertj.core.api.Assertions.assertThat
@@ -25,7 +26,8 @@ import javax.ws.rs.core.Response
 internal class TransferResourceIT {
 
     private val objectMapper = ObjectMapper().registerModule(KotlinModule())
-    private val rule = DropwizardAppExtension(TransferService::class.java)
+    private val configPath = ResourceHelpers.resourceFilePath("config-test.yaml")
+    private val rule = DropwizardAppExtension(TransferApplication::class.java, configPath)
 
     @Test
     fun `should successfully transfer funds`() {
