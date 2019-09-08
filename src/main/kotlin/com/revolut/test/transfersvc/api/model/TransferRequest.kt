@@ -1,4 +1,4 @@
-package com.revolut.test.transfersvc.domain
+package com.revolut.test.transfersvc.api.model
 
 import java.math.BigDecimal
 

@@ -3,6 +3,7 @@ package com.revolut.test.transfersvc
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.revolut.test.transfersvc.config.TransferServiceConfig
 import com.revolut.test.transfersvc.resources.TransferResource
+import com.revolut.test.transfersvc.service.DefaultTransferService
 import io.dropwizard.Application
 import io.dropwizard.db.DataSourceFactory
 import io.dropwizard.jdbi.DBIFactory
@@ -21,9 +22,9 @@ internal class TransferApplication : Application<TransferServiceConfig>() {
 
     override fun run(config: TransferServiceConfig, environment: Environment) {
         val dbiFactory = DBIFactory()
-        val jdbi = dbiFactory.build(environment, config.dataSourceFactory, "dbi")
-
-        environment.jersey().register(TransferResource())
+        val dbi = dbiFactory.build(environment, config.dataSourceFactory, "dbi")
+        val transferService = DefaultTransferService(dbi)
+        environment.jersey().register(TransferResource(transferService))
     }
 
     override fun getName(): String {
