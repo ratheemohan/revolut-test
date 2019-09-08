@@ -3,6 +3,50 @@
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
          http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd"
-        logicalFilePath="migrations">
+        logicalFilePath="db-changelog-1.0.xml">
+
+    <changeSet id="create-accounts-tables" author="mohan">
+        <createTable tableName="accounts">
+            <column name="id" type="varchar2(36)">
+                <constraints primaryKey="true" primaryKeyName="accounts_id_pk"/>
+            </column>
+            <column name="sort_code" type="varchar2(6)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="account_number" type="varchar2(8)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="balance" type="number(12,3)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="opened_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version" type="number(12,0)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="create-transactions-table" author="mohan">
+        <createTable tableName="transactions">
+            <column name="id" type="varchar2(36)">
+                <constraints primaryKey="true" primaryKeyName="transactions_id_pk"/>
+            </column>
+            <column name="account_id" type="varchar2(36)">
+                <constraints foreignKeyName="txs_accts_fk" referencedTableName="accounts" referencedColumnNames="id"
+                             nullable="false"/>
+            </column>
+            <column name="amount" type="number(12,3)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="type" type="varchar2(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="issued_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
 
 </databaseChangeLog>

@@ -4,18 +4,19 @@ import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.revolut.test.transfersvc.config.TransferServiceConfig
 import com.revolut.test.transfersvc.resources.TransferResource
 import com.revolut.test.transfersvc.service.DefaultTransferService
+import com.revolut.test.transfersvc.util.LiquibaseMigrateOnBootstrap
 import io.dropwizard.Application
-import io.dropwizard.db.DataSourceFactory
 import io.dropwizard.jdbi.DBIFactory
-import io.dropwizard.migrations.MigrationsBundle
 import io.dropwizard.setup.Bootstrap
 import io.dropwizard.setup.Environment
+import java.util.function.Function
+import java.util.function.Supplier
 
 internal class TransferApplication : Application<TransferServiceConfig>() {
 
     companion object {
         @JvmStatic
-        fun main(args: Array<String>){
+        fun main(args: Array<String>) {
             TransferApplication().run(*args)
         }
     }
@@ -24,7 +25,16 @@ internal class TransferApplication : Application<TransferServiceConfig>() {
         val dbiFactory = DBIFactory()
         val dbi = dbiFactory.build(environment, config.dataSourceFactory, "dbi")
         val transferService = DefaultTransferService(dbi)
-        environment.jersey().register(TransferResource(transferService))
+
+        environment.run {
+
+            jersey().register(TransferResource(transferService))
+
+            lifecycle().manage(LiquibaseMigrateOnBootstrap(
+                    Supplier { LiquibaseMigrateOnBootstrap.create(dbi.open(), Function { handle -> handle.connection }) },
+                    config.liquibaseChangeLog
+            ))
+        }
     }
 
     override fun getName(): String {
@@ -33,15 +43,5 @@ internal class TransferApplication : Application<TransferServiceConfig>() {
 
     override fun initialize(bootstrap: Bootstrap<TransferServiceConfig>) {
         bootstrap.objectMapper.registerModule(KotlinModule())
-        bootstrap.addBundle(object: MigrationsBundle<TransferServiceConfig>() {
-
-            override fun getDataSourceFactory(configuration: TransferServiceConfig): DataSourceFactory {
-                return configuration.dataSourceFactory
-            }
-
-            override fun getMigrationsFileName(): String {
-                return "db-master-changelog.xml"
-            }
-        })
     }
 }
