@@ -12,7 +12,7 @@ import io.dropwizard.setup.Environment
 import java.util.function.Function
 import java.util.function.Supplier
 
-internal class TransferApplication : Application<TransferServiceConfig>() {
+class TransferApplication : Application<TransferServiceConfig>() {
 
     companion object {
         @JvmStatic
