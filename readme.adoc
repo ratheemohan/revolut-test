@@ -23,3 +23,19 @@ Implicit requirements:
 
     . The code produced by you is expected to be of high quality.
     . There are no detailed requirements, use common sense.
+
+== Implementation Notes
+
+- Used UK bank accounts (sort code, account number)
+- Ignored validations of bank account number and sort code
+
+== Why DropWizard?
+
+- Out-of-the-box support for configuration, application metrics, logging and much more
+- Develops high-performance RESTful web services
+- Supports JSR 303: Bean Validation using Hibernate validator
+- Quick and easy to learn
+
+== Other Considerations
+
+Considered SparkJava framework, it's quiet simple, but the general feedback noticed it is not production ready.
