@@ -6,6 +6,7 @@ import com.revolut.test.transfersvc.resources.TransferResource.Companion.TRANSFE
 import com.revolut.test.transfersvc.service.TransferService
 import com.revolut.test.transfersvc.util.logger
 import javax.validation.Valid
+import javax.validation.constraints.NotNull
 import javax.ws.rs.POST
 import javax.ws.rs.Path
 import javax.ws.rs.Produces
@@ -22,16 +23,16 @@ class TransferResource(private val transferService: TransferService) {
     }
 
     @POST
-    fun transfer(@Valid transferRequest: TransferRequest): Response {
+    fun transfer(@Valid @NotNull transferRequest: TransferRequest): Response {
         logger.info("Received Transaction request $transferRequest")
         val result = transferService.transfer(transferRequest)
 
-        return if (result is TransferSuccessful) {
-            logger.debug("Transaction request=$transferRequest is successful")
-            Response.ok(result).build()
-        } else {
+        return if (result !is TransferSuccessful) {
             logger.error("Transaction request=$transferRequest failed")
             Response.status(400).entity(result).build()
+        } else {
+            logger.debug("Transaction request=$transferRequest is successful")
+            Response.ok(result).build()
         }
     }
 }

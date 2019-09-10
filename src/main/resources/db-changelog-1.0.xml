@@ -16,7 +16,7 @@
             <column name="account_number" type="varchar2(8)">
                 <constraints nullable="false"/>
             </column>
-            <column name="balance" type="number(12,3)">
+            <column name="balance" type="number(12,2)">
                 <constraints nullable="false"/>
             </column>
             <column name="opened_at" type="timestamp">
@@ -37,7 +37,7 @@
                 <constraints foreignKeyName="txs_accts_fk" referencedTableName="accounts" referencedColumnNames="id"
                              nullable="false"/>
             </column>
-            <column name="amount" type="number(12,3)">
+            <column name="amount" type="number(12,2)">
                 <constraints nullable="false"/>
             </column>
             <column name="type" type="varchar2(32)">

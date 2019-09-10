@@ -62,14 +62,14 @@ internal class TransferServiceTest : BaseTestSetup() {
             val janeTx: MutableMap<String, Any> = h.createQuery("select * from transactions where account_id = :accountId")
                     .bind("accountId", janeAccount.id)
                     .first()
-            assertThat(janeTx["amount"]).isEqualTo(BigDecimal("13.500"))
+            assertThat(janeTx["amount"]).isEqualTo(BigDecimal("13.50"))
             assertThat(janeTx["type"]).isEqualTo("OUT")
             assertThat(janeTx["reference"]).isEqualTo("Thanks")
 
             val bobTx: MutableMap<String, Any> = h.createQuery("select * from transactions where account_id = :accountId")
                     .bind("accountId", bobAccount.id)
                     .first()
-            assertThat(bobTx["amount"]).isEqualTo(BigDecimal("13.500"))
+            assertThat(bobTx["amount"]).isEqualTo(BigDecimal("13.50"))
             assertThat(bobTx["type"]).isEqualTo("IN")
             assertThat(bobTx["reference"]).isEqualTo("Thanks")
         }
