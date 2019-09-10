@@ -8,7 +8,7 @@ import java.sql.Connection
 import java.util.function.Function
 import java.util.function.Supplier
 
-class LiquibaseMigrateOnBootstrap(
+class LiquibaseChangeLogExecutor(
         private val connectionSupplier: Supplier<ClosableConnectionSupplier>,
         private val changelogFile: String = "db-master-changelog.xml"
 ) : Managed {

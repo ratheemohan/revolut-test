@@ -7,7 +7,7 @@ class Transaction(
         val id: String,
         val accountId: String,
         val amount: BigDecimal,
-        val transactionType: TransactionType,
+        val type: TransactionType,
         val issuedAt: Instant,
         val reference: String
 )

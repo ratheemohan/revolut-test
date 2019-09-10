@@ -21,13 +21,13 @@ internal interface AccountRepository {
     fun insert(@BindBean account: Account)
 
     @SqlQuery("select * from accounts where sort_code = :sortCode and account_number = :accountNumber")
-    fun find(@BindBean key: SortCodeAccountNumber): Account
+    fun find(@BindBean key: SortCodeAccountNumber): Account?
 
     @SqlUpdate("update accounts set version = version+1, balance = :balance where id = :id and version = :version")
     fun updateWithVersion(@BindBean account: Account): Int
 }
 
-private class AccountRowMapper : ResultSetMapper<Account> {
+internal class AccountRowMapper : ResultSetMapper<Account> {
     override fun map(index: Int, rs: ResultSet, ctx: StatementContext): Account {
         return Account(
                 id = rs.getString("id"),
