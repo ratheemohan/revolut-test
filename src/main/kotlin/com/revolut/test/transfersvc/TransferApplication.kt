@@ -24,8 +24,8 @@ internal class TransferApplication : Application<TransferServiceConfig>() {
     override fun run(config: TransferServiceConfig, environment: Environment) {
         val dbiFactory = DBIFactory()
         val dbi = dbiFactory.build(environment, config.dataSourceFactory, "dbi")
-        val idGenerator: IdGenerator = DefaultIdGenerator()
-        val timeService: TimeService = DefaultTimeService()
+        val idGenerator: IdGenerator = UUIDGenerator
+        val timeService: TimeService = DefaultTimeService
         val transferService = DefaultTransferService(dbi, idGenerator, timeService)
 
         environment.run {

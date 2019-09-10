@@ -1,5 +1,7 @@
 package com.revolut.test.transfersvc.service
 
+import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.whenever
 import com.revolut.test.transfersvc.api.model.*
 import com.revolut.test.transfersvc.domain.Account
 import com.revolut.test.transfersvc.fixtures.Fixtures.Bob_Account_Number
@@ -9,8 +11,6 @@ import com.revolut.test.transfersvc.fixtures.Fixtures.Jane_Account_Sort_Code
 import com.revolut.test.transfersvc.fixtures.Fixtures.defaultTransferRequest
 import com.revolut.test.transfersvc.persistence.AccountRepository
 import com.revolut.test.transfersvc.setup.BaseTestSetup
-import com.revolut.test.transfersvc.util.DefaultIdGenerator
-import com.revolut.test.transfersvc.util.DefaultTimeService
 import com.revolut.test.transfersvc.util.IdGenerator
 import com.revolut.test.transfersvc.util.TimeService
 import org.assertj.core.api.Assertions.assertThat
@@ -19,16 +19,21 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
 import org.skife.jdbi.v2.Handle
 import java.math.BigDecimal
+import java.time.Instant
+import java.util.*
 
 @TestInstance(PER_CLASS)
 internal class TransferServiceTest : BaseTestSetup() {
 
-    private val idGenerator: IdGenerator = DefaultIdGenerator()
-    private val timeService: TimeService = DefaultTimeService()
+    private val idGenerator: IdGenerator = mock()
+    private val timeService: TimeService = mock()
     private val transferService = DefaultTransferService(testDb.dbi, idGenerator, timeService)
 
     @Test
     fun `should do transfer when has enough funds`() {
+        whenever(idGenerator.generateId()).thenReturn(UUID.randomUUID().toString()).thenReturn(UUID.randomUUID().toString())
+        whenever(timeService.now()).thenReturn(Instant.now())
+
         val transferResult: TransferResult = transferService.transfer(defaultTransferRequest(BigDecimal.valueOf(13)))
 
         assertThat(transferResult).isEqualTo(TransferSuccessful("Success"))
@@ -46,6 +51,9 @@ internal class TransferServiceTest : BaseTestSetup() {
 
     @Test
     fun `should create transactions when transferred`() {
+        whenever(idGenerator.generateId()).thenReturn(UUID.randomUUID().toString()).thenReturn(UUID.randomUUID().toString())
+        whenever(timeService.now()).thenReturn(Instant.now())
+
         val transferResult: TransferResult = transferService.transfer(defaultTransferRequest(BigDecimal.valueOf(13.500)))
 
         assertThat(transferResult).isEqualTo(TransferSuccessful("Success"))

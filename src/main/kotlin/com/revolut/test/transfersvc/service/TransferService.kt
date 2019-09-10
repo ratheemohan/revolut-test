@@ -14,6 +14,9 @@ import org.skife.jdbi.v2.Handle
 import org.skife.jdbi.v2.TransactionStatus
 import org.skife.jdbi.v2.exceptions.CallbackFailedException
 
+/**
+ * Service to transfer funds from an account to other.
+ */
 interface TransferService {
 
     fun transfer(transferRequest: TransferRequest): TransferResult
@@ -69,6 +72,7 @@ internal class DefaultTransferService(
                         buildTransaction(toAccount.id, IN, transferRequest)
                 )
 
+                logger.debug("Account transfer from=${transferRequest.from.accountNumber} to=${transferRequest.to.accountNumber} is successfull")
                 TransferSuccessful("Success")
             }
         } catch (exception: CallbackFailedException) {
@@ -92,7 +96,7 @@ internal class DefaultTransferService(
 
     private fun buildTransaction(accountId: String, type: TransactionType, transferRequest: TransferRequest): Transaction {
         return Transaction(
-                id = idGenerator.generateUUID(),
+                id = idGenerator.generateId(),
                 accountId = accountId,
                 amount = transferRequest.amount,
                 type = type,

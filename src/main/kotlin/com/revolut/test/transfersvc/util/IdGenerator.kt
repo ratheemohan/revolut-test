@@ -2,12 +2,15 @@ package com.revolut.test.transfersvc.util
 
 import java.util.*
 
+/**
+ * Single function interface to generate ids
+ */
 interface IdGenerator {
-    fun generateUUID(): String
+    fun generateId(): String
 }
 
-class DefaultIdGenerator : IdGenerator {
-    override fun generateUUID(): String {
+object UUIDGenerator : IdGenerator {
+    override fun generateId(): String {
         return UUID.randomUUID().toString()
     }
 }
