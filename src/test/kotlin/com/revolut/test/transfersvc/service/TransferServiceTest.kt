@@ -84,7 +84,7 @@ internal class TransferServiceTest : BaseTestSetup() {
     }
 
     @Test
-    fun `should fail when from account doesn't have sufficient funds`() {
+    fun `should fail when source account doesn't have sufficient funds`() {
         val request = defaultTransferRequest(BigDecimal.valueOf(25))
         val expectedErrorMessage = ErrorDetail("source.account.insufficient-funds", "Transfer Failed")
         val transferResult: TransferResult = transferService.transfer(request)
@@ -106,7 +106,7 @@ internal class TransferServiceTest : BaseTestSetup() {
     }
 
     @Test
-    fun `should fail when from account does not exist`() {
+    fun `should fail when source account does not exist`() {
         val withNonExistentSourceAccount: TransferRequest = defaultTransferRequest(BigDecimal.valueOf(20))
                 .copy(source = AccountIdentity("missing", "12345678"))
         val expectedError = ErrorDetail("source.account.not-found", "Transfer Failed")
@@ -127,7 +127,7 @@ internal class TransferServiceTest : BaseTestSetup() {
     }
 
     @Test
-    fun `should fail when to account does not exist`() {
+    fun `should fail when target account does not exist`() {
         val withNonExistentTargetAccount: TransferRequest = defaultTransferRequest(BigDecimal.valueOf(20))
                 .copy(target = AccountIdentity("missing", "87654321"))
         val expectedError = ErrorDetail("target.account.not-found", "Transfer Failed")
