@@ -54,7 +54,7 @@ class TransferResourceTest {
                 .request()
                 .post(Entity.entity(defaultTransferRequest(), APPLICATION_JSON_TYPE))
 
-        assertThat(response.status).isEqualTo(400)
+        assertThat(response.status).isEqualTo(500)
         assertThat(response.readEntity(TransferFailure::class.java)).isEqualTo(TransferFailure(error))
     }
 

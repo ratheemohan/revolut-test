@@ -12,11 +12,9 @@ Explicit requirements:
     . You can use Java or Kotlin.
     . Keep it simple and to the point (e.g. no need to implement any authentication).
     . Assume the API is invoked by multiple systems and services on behalf of end users.
-    . You can use frameworks/libraries if you like (except Spring), but don't forget about
-      requirement #2 and keep it simple and avoid heavy frameworks.
+    . You can use frameworks/libraries if you like (except Spring), but don't forget about requirement #2 and keep it simple and avoid heavy frameworks.
     . The datastore should run in-memory for the sake of this test.
-    . The final result should be executable as a standalone program (should not require a
-      pre-installed container/server).
+    . The final result should be executable as a standalone program (should not require a pre-installed container/server).
     . Demonstrate with tests that the API works as expected.
 
 Implicit requirements:
@@ -28,6 +26,18 @@ Implicit requirements:
 
 - Used UK bank accounts (sort code, account number)
 - Ignored validations of bank account number and sort code
+- Ignored the currency conversions
+
+== Usage
+
+Build and run the project by using the below commands
+
+```
+cd /<project_directory>
+mvn clean package
+cd target/
+java -jar transfer-service-1.0-SNAPSHOT.jar server ../config.yaml
+```
 
 == Why DropWizard?
 

@@ -47,7 +47,7 @@ internal class DefaultTransferService(
                 val fromAccount: Account = accountRepository.find(transferRequest.from)
                         ?: throw InvalidFromAccountException(fromAccountNotFound)
 
-                if (!fromAccount.hasEnoughFunds(transferRequest.amount)) {
+                if (fromAccount.hasEnoughFunds(transferRequest.amount).not()) {
                     throw InSufficientFundsException(fromAccountInSufficientFunds)
                 }
 

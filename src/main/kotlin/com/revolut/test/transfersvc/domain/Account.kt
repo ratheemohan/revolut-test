@@ -13,7 +13,7 @@ data class Account(
 )
 
 fun Account.hasEnoughFunds(amount: BigDecimal): Boolean {
-    return this.balance.compareTo(amount) >= 0
+    return this.balance >= amount
 }
 
 fun Account.debit(amount: BigDecimal): Account {

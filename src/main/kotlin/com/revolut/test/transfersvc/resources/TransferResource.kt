@@ -25,14 +25,16 @@ class TransferResource(private val transferService: TransferService) {
     @POST
     fun transfer(@Valid @NotNull transferRequest: TransferRequest): Response {
         logger.info("Received Transaction request $transferRequest")
-        val result = transferService.transfer(transferRequest)
 
-        return if (result !is TransferSuccessful) {
-            logger.error("Transaction request=$transferRequest failed")
-            Response.status(400).entity(result).build()
-        } else {
-            logger.debug("Transaction request=$transferRequest is successful")
-            Response.ok(result).build()
+        return when (val result = transferService.transfer(transferRequest)) {
+            !is TransferSuccessful -> {
+                logger.error("Transaction request=$transferRequest failed")
+                Response.status(500).entity(result).build()
+            }
+            else -> {
+                logger.debug("Transaction request=$transferRequest is successful")
+                Response.ok(result).build()
+            }
         }
     }
 }
