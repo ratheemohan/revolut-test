@@ -73,7 +73,7 @@ class TransferResourceTest {
 
     @Test
     fun `should fail validation on amount precision`() {
-        //allowed precision is 2
+        //allowed precision is 3
         val invalidAmount: BigDecimal = BigDecimal.valueOf(20.12344)
         val response: Response = rule.client().target(TRANSFER_RESOURCE_PATH)
                 .request()
