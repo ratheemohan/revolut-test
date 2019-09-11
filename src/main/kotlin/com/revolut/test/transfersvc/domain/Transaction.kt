@@ -3,13 +3,14 @@ package com.revolut.test.transfersvc.domain
 import java.math.BigDecimal
 import java.time.Instant
 
-class Transaction(
+data class Transaction(
         val id: String,
         val accountId: String,
         val amount: BigDecimal,
         val type: TransactionType,
         val issuedAt: Instant,
-        val reference: String
+        val description: String,
+        val transferRequestId: String
 )
 
 enum class TransactionType {

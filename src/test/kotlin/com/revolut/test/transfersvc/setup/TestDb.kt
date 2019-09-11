@@ -1,21 +1,18 @@
 package com.revolut.test.transfersvc.setup
 
-import com.revolut.test.transfersvc.util.use
+import com.revolut.test.transfersvc.util.LiquibaseChangeLogExecutor
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import io.dropwizard.jdbi.args.InstantArgumentFactory
 import io.dropwizard.jdbi.args.InstantMapper
 import io.dropwizard.jdbi.args.OptionalArgumentFactory
-import liquibase.Liquibase
-import liquibase.database.jvm.JdbcConnection
-import liquibase.resource.ClassLoaderResourceAccessor
 import org.skife.jdbi.v2.DBI
 
 class TestDb(private val liquibaseChangeLog: String, private val jdbcUrl: String) {
 
     constructor() : this("db-master-changelog.xml", "jdbc:h2:mem:test")
 
-    val ds: HikariDataSource = createDataSource().also { runLiquibase(it)  }
+    val ds: HikariDataSource = createDataSource().also { runLiquibase(it) }
     val dbi: DBI = createHikariConnectionPool(ds)
 
     private fun createDataSource(): HikariDataSource {
@@ -41,13 +38,6 @@ class TestDb(private val liquibaseChangeLog: String, private val jdbcUrl: String
     }
 
     private fun runLiquibase(dataSource: HikariDataSource) {
-        dataSource.connection.use { connection ->
-            val liquibase = Liquibase(
-                    liquibaseChangeLog,
-                    ClassLoaderResourceAccessor(),
-                    JdbcConnection(connection))
-
-            liquibase.update("")
-        }
+        LiquibaseChangeLogExecutor(dataSource.connection, liquibaseChangeLog).start()
     }
 }

@@ -15,7 +15,7 @@ import org.skife.jdbi.v2.TransactionStatus
 import org.skife.jdbi.v2.exceptions.CallbackFailedException
 
 /**
- * Service to transfer funds from an account to other.
+ * Service to transfer funds source to target account.
  */
 interface TransferService {
 
@@ -26,13 +26,15 @@ interface TransferService {
 internal class DefaultTransferService(
         private val dbi: DBI,
         private val idGenerator: IdGenerator,
-        private val timeService: TimeService
+        private val timeService: TimeService,
+        private val accountRepository: AccountRepository,
+        private val transactionRepository: TransactionRepository
 ) : TransferService {
 
     companion object {
-        const val fromAccountNotFound: String = "from.account.not-found"
-        const val toAccountNotFound: String = "to.account.not-found"
-        const val fromAccountInSufficientFunds: String = "from.account.insufficient-funds"
+        const val sourceAccountNotFound: String = "source.account.not-found"
+        const val targetAccountNotFound: String = "target.account.not-found"
+        const val sourceAccountInSufficientFunds: String = "source.account.insufficient-funds"
         const val optimisticLocking: String = "optimistic.locking"
 
         val logger = logger()
@@ -41,49 +43,45 @@ internal class DefaultTransferService(
     override fun transfer(transferRequest: TransferRequest): TransferResult {
         logger.info("Processing transfer request $transferRequest")
         return try {
-            dbi.inTransaction { handle: Handle, _: TransactionStatus ->
-                val accountRepository: AccountRepository = handle.attach(AccountRepository::class.java)
+            dbi.inTransaction { _: Handle, _: TransactionStatus ->
+                val sourceAccount = validateSourceAccount(accountRepository, transferRequest)
 
-                val fromAccount: Account = accountRepository.find(transferRequest.from)
-                        ?: throw InvalidFromAccountException(fromAccountNotFound)
+                val targetAccount = accountRepository.find(transferRequest.target)
+                        ?: throw InvalidTargetAccountException(targetAccountNotFound)
 
-                if (fromAccount.hasEnoughFunds(transferRequest.amount).not()) {
-                    throw InSufficientFundsException(fromAccountInSufficientFunds)
-                }
+                val sourceAccountAfterDebit = sourceAccount.debit(transferRequest.amount)
+                val targetAccountAfterCredit = targetAccount.credit(transferRequest.amount)
 
-                val toAccount: Account = accountRepository.find(transferRequest.to)
-                        ?: throw InvalidToAccountException(toAccountNotFound)
+                updateAccount(sourceAccountAfterDebit, accountRepository)
+                updateAccount(targetAccountAfterCredit, accountRepository)
 
-                val fromAccountAfterDebit: Account = fromAccount.debit(transferRequest.amount)
-                val toAccountAfterCredit: Account = toAccount.credit(transferRequest.amount)
-
-                updateAccount(fromAccountAfterDebit, accountRepository)
-                updateAccount(toAccountAfterCredit, accountRepository)
-
-                val transactionRepository = handle.attach(TransactionRepository::class.java)
-
-                //record outgoing transaction on fromAccount
+                //record outgoing transaction on sourceAccount
                 transactionRepository.insert(
-                        buildTransaction(fromAccount.id, OUT, transferRequest)
+                        buildTransaction(sourceAccount.id, OUT, transferRequest)
                 )
 
-                //Incoming transaction in toAccount
+                //Incoming transaction in targetAccount
                 transactionRepository.insert(
-                        buildTransaction(toAccount.id, IN, transferRequest)
+                        buildTransaction(targetAccount.id, IN, transferRequest)
                 )
 
-                logger.debug("Account transfer from=${transferRequest.from.accountNumber} to=${transferRequest.to.accountNumber} is successfull")
-                TransferSuccessful("Success")
+                logger.debug("Account transfer source=${transferRequest.source.accountNumber} target=${transferRequest.target.accountNumber} is successful")
+                TransferSuccessful(transferRequest.requestId)
             }
         } catch (exception: CallbackFailedException) {
-            val cause: Throwable? = exception.cause
-            if (cause != null && cause is TransferFailureException) {
-                logger.error("Transfer request failed with reason=${cause.reason}")
-                val errorDetail = ErrorDetail(code = cause.reason)
-                return TransferFailure(errorDetail)
-            }
-            throw exception
+            return handleTransferException(exception, transferRequest)
         }
+    }
+
+    private fun validateSourceAccount(repo: AccountRepository, request: TransferRequest): Account {
+        val sourceAccount: Account = repo.find(request.source)
+                ?: throw InvalidSourceAccountException(sourceAccountNotFound)
+
+        if (sourceAccount.hasEnoughFunds(request.amount).not()) {
+            throw InSufficientFundsException(sourceAccountInSufficientFunds)
+        }
+
+        return sourceAccount
     }
 
     private fun updateAccount(account: Account, accountRepository: AccountRepository) {
@@ -100,14 +98,25 @@ internal class DefaultTransferService(
                 accountId = accountId,
                 amount = transferRequest.amount,
                 type = type,
-                reference = transferRequest.reference,
-                issuedAt = timeService.now()
+                description = transferRequest.description,
+                issuedAt = timeService.now(),
+                transferRequestId = transferRequest.requestId
         )
+    }
+
+    private fun handleTransferException(exception: CallbackFailedException, transferRequest: TransferRequest): TransferFailure {
+        val cause: Throwable? = exception.cause
+        if (cause != null && cause is TransferFailureException) {
+            logger.error("Transfer request failed with reason=${cause.reason}")
+            val errorDetail = ErrorDetail(code = cause.reason)
+            return TransferFailure(transferRequest.requestId, errorDetail)
+        }
+        throw exception
     }
 }
 
 sealed class TransferFailureException(val reason: String) : RuntimeException(reason)
-data class InvalidFromAccountException(val error: String) : TransferFailureException(error)
-data class InvalidToAccountException(val error: String) : TransferFailureException(error)
+data class InvalidSourceAccountException(val error: String) : TransferFailureException(error)
+data class InvalidTargetAccountException(val error: String) : TransferFailureException(error)
 data class InSufficientFundsException(val error: String) : TransferFailureException(error)
 data class OptimisticLockingException(val error: String) : TransferFailureException(error)

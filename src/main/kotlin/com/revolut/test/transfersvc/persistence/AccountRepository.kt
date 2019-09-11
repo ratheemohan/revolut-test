@@ -1,6 +1,6 @@
 package com.revolut.test.transfersvc.persistence
 
-import com.revolut.test.transfersvc.api.model.SortCodeAccountNumber
+import com.revolut.test.transfersvc.api.model.AccountIdentity
 import com.revolut.test.transfersvc.domain.Account
 import org.skife.jdbi.v2.StatementContext
 import org.skife.jdbi.v2.sqlobject.Bind
@@ -21,7 +21,7 @@ internal interface AccountRepository {
     fun insert(@BindBean account: Account)
 
     @SqlQuery("select * from accounts where sort_code = :sortCode and account_number = :accountNumber")
-    fun find(@BindBean key: SortCodeAccountNumber): Account?
+    fun find(@BindBean key: AccountIdentity): Account?
 
     @SqlUpdate("update accounts set version = version+1, balance = :balance where id = :id and version = :version")
     fun updateWithVersion(@BindBean account: Account): Int

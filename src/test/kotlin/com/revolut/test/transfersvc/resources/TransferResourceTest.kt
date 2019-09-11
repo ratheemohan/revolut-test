@@ -5,9 +5,11 @@ import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
+import com.revolut.test.transfersvc.api.model.AccountIdentity
 import com.revolut.test.transfersvc.api.model.ErrorDetail
-import com.revolut.test.transfersvc.api.model.SortCodeAccountNumber
 import com.revolut.test.transfersvc.api.model.TransferFailure
+import com.revolut.test.transfersvc.api.model.TransferState.COMPLETED
+import com.revolut.test.transfersvc.api.model.TransferState.FAILED
 import com.revolut.test.transfersvc.api.model.TransferSuccessful
 import com.revolut.test.transfersvc.fixtures.Fixtures.defaultTransferRequest
 import com.revolut.test.transfersvc.resources.TransferResource.Companion.TRANSFER_RESOURCE_PATH
@@ -35,27 +37,38 @@ class TransferResourceTest {
 
     @Test
     fun `should return transfer successful response`() {
-        whenever(transferService.transfer(any())).thenReturn(TransferSuccessful("Success"))
+        whenever(transferService.transfer(any())).thenReturn(TransferSuccessful(requestId = "1"))
 
         val response: Response = rule.client().target(TRANSFER_RESOURCE_PATH)
                 .request()
                 .post(Entity.entity(defaultTransferRequest(), APPLICATION_JSON_TYPE))
 
         assertThat(response.status).isEqualTo(200)
-        assertThat(response.readEntity(TransferSuccessful::class.java)).isEqualTo(TransferSuccessful("Success"))
+
+        with(response.readEntity(TransferSuccessful::class.java)){
+            assertThat(requestId).isEqualTo("1")
+            assertThat(state).isEqualTo(COMPLETED)
+        }
     }
 
     @Test
     fun `should return transfer fail response`() {
-        val error = ErrorDetail(code = "from.account.insufficient-funds")
-        whenever(transferService.transfer(any())).thenReturn(TransferFailure(error))
+        val request = defaultTransferRequest()
+        val expectedError = ErrorDetail(code = "source.account.insufficient-funds")
+
+        whenever(transferService.transfer(any())).thenReturn(TransferFailure(request.requestId, expectedError))
 
         val response: Response = rule.client().target(TRANSFER_RESOURCE_PATH)
                 .request()
                 .post(Entity.entity(defaultTransferRequest(), APPLICATION_JSON_TYPE))
 
         assertThat(response.status).isEqualTo(500)
-        assertThat(response.readEntity(TransferFailure::class.java)).isEqualTo(TransferFailure(error))
+
+        with(response.readEntity(TransferFailure::class.java)){
+            assertThat(requestId).isEqualTo(request.requestId)
+            assertThat(state).isEqualTo(FAILED)
+            assertThat(errorDetail).isEqualTo(expectedError)
+        }
     }
 
     @Test
@@ -71,8 +84,8 @@ class TransferResourceTest {
 
     @Test
     fun `should fail validation on account number missing`() {
-        val inValidFromAccountNumber = SortCodeAccountNumber(sortCode = "400411", accountNumber = "")
-        val invalidTransferRequest = defaultTransferRequest().copy(from = inValidFromAccountNumber)
+        val inValidSourceAccountNumber = AccountIdentity(sortCode = "400411", accountNumber = "")
+        val invalidTransferRequest = defaultTransferRequest().copy(source = inValidSourceAccountNumber)
 
         val response: Response = rule.client().target(TRANSFER_RESOURCE_PATH)
                 .request()

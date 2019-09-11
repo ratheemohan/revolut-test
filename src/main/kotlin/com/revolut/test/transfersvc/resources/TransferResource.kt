@@ -6,7 +6,6 @@ import com.revolut.test.transfersvc.resources.TransferResource.Companion.TRANSFE
 import com.revolut.test.transfersvc.service.TransferService
 import com.revolut.test.transfersvc.util.logger
 import javax.validation.Valid
-import javax.validation.constraints.NotNull
 import javax.ws.rs.POST
 import javax.ws.rs.Path
 import javax.ws.rs.Produces
@@ -19,11 +18,11 @@ class TransferResource(private val transferService: TransferService) {
 
     companion object {
         val logger = logger()
-        const val TRANSFER_RESOURCE_PATH: String = "/transfers"
+        const val TRANSFER_RESOURCE_PATH: String = "/transfer"
     }
 
     @POST
-    fun transfer(@Valid @NotNull transferRequest: TransferRequest): Response {
+    fun transfer(@Valid transferRequest: TransferRequest): Response {
         logger.info("Received Transaction request $transferRequest")
 
         return when (val result = transferService.transfer(transferRequest)) {

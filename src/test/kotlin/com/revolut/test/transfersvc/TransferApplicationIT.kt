@@ -1,7 +1,6 @@
 package com.revolut.test.transfersvc
 
 import com.revolut.test.transfersvc.fixtures.Fixtures.defaultTransferRequest
-import io.dropwizard.testing.ResourceHelpers
 import io.dropwizard.testing.junit5.DropwizardAppExtension
 import io.dropwizard.testing.junit5.DropwizardExtensionsSupport
 import org.assertj.core.api.Assertions.assertThat
@@ -18,11 +17,10 @@ import javax.ws.rs.core.Response
 @ExtendWith(DropwizardExtensionsSupport::class)
 internal class TransferApplicationIT {
 
-    private val configPath = ResourceHelpers.resourceFilePath("config-test.yaml")
-    private val appExtension = DropwizardAppExtension(TransferApplication::class.java, configPath)
+    private val appExtension = DropwizardAppExtension(TransferApplication::class.java, "/config-test.yaml")
 
     @Test
-    fun `should start the app`() {
+    fun `should start the app and return 404 when resource doesn't exist`() {
         val response: Response = appExtension.client().target("http://localhost:${appExtension.localPort}/api")
                 .request()
                 .post(Entity.entity(defaultTransferRequest(), APPLICATION_JSON_TYPE))

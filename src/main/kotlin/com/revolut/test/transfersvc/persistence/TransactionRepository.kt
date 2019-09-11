@@ -11,7 +11,7 @@ import java.sql.ResultSet
 
 @RegisterMapper(TransactionRowMapper::class)
 internal interface TransactionRepository {
-    @SqlUpdate("insert into transactions (id, account_id, amount, type, reference, issued_at) values (:id, :accountId, :amount, :type, :reference, :issuedAt)")
+    @SqlUpdate("insert into transactions (id, account_id, amount, type, description, issued_at, transfer_request_id) values (:id, :accountId, :amount, :type, :description, :issuedAt, :transferRequestId)")
      fun insert(@BindBean tx: Transaction)
 }
 
@@ -24,7 +24,8 @@ internal class TransactionRowMapper : ResultSetMapper<Transaction> {
                 amount = rs.getBigDecimal("amount"),
                 type = TransactionType.valueOf(rs.getString("type")),
                 issuedAt = rs.getTimestamp("issued_at").toInstant(),
-                reference = rs.getString("reference")
+                description = rs.getString("description"),
+                transferRequestId = rs.getString("transfer_request_id")
         )
     }
 }

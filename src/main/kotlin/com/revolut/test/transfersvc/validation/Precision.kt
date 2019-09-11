@@ -15,12 +15,12 @@ import kotlin.reflect.KClass
 @Constraint(validatedBy = [PrecisionValidator::class])
 annotation class Precision(
         val value: Int,
-        val message: String = "{com.revolut.test.transfersvc.validation.Precision.message}",
+        val message: String = "Invalid precision",
         val groups: Array<KClass<*>> = [],
         val payload: Array<KClass<out Payload>> = []
 )
 
-class PrecisionValidator : ConstraintValidator<Precision, BigDecimal> {
+class PrecisionValidator : ConstraintValidator<Precision, BigDecimal?> {
 
     private var precision: Int = 0
 

@@ -1,8 +1,7 @@
 package com.revolut.test.transfersvc.service
 
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.whenever
 import com.revolut.test.transfersvc.api.model.*
+import com.revolut.test.transfersvc.api.model.TransferState.COMPLETED
 import com.revolut.test.transfersvc.domain.Account
 import com.revolut.test.transfersvc.fixtures.Fixtures.Bob_Account_Number
 import com.revolut.test.transfersvc.fixtures.Fixtures.Bob_Account_Sort_Code
@@ -10,33 +9,38 @@ import com.revolut.test.transfersvc.fixtures.Fixtures.Jane_Account_Number
 import com.revolut.test.transfersvc.fixtures.Fixtures.Jane_Account_Sort_Code
 import com.revolut.test.transfersvc.fixtures.Fixtures.defaultTransferRequest
 import com.revolut.test.transfersvc.persistence.AccountRepository
+import com.revolut.test.transfersvc.persistence.TransactionRepository
 import com.revolut.test.transfersvc.setup.BaseTestSetup
+import com.revolut.test.transfersvc.util.DefaultTimeService
 import com.revolut.test.transfersvc.util.IdGenerator
 import com.revolut.test.transfersvc.util.TimeService
+import com.revolut.test.transfersvc.util.UUIDGenerator
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
 import org.skife.jdbi.v2.Handle
 import java.math.BigDecimal
-import java.time.Instant
-import java.util.*
 
 @TestInstance(PER_CLASS)
 internal class TransferServiceTest : BaseTestSetup() {
 
-    private val idGenerator: IdGenerator = mock()
-    private val timeService: TimeService = mock()
-    private val transferService = DefaultTransferService(testDb.dbi, idGenerator, timeService)
+    private val idGenerator: IdGenerator = UUIDGenerator
+    private val timeService: TimeService = DefaultTimeService
+    private val accountRepository: AccountRepository = testDb.dbi.onDemand(AccountRepository::class.java)
+    private val transactionRepository: TransactionRepository = testDb.dbi.onDemand(TransactionRepository::class.java)
+    private val transferService = DefaultTransferService(testDb.dbi, idGenerator, timeService, accountRepository, transactionRepository)
 
     @Test
     fun `should do transfer when has enough funds`() {
-        whenever(idGenerator.generateId()).thenReturn(UUID.randomUUID().toString()).thenReturn(UUID.randomUUID().toString())
-        whenever(timeService.now()).thenReturn(Instant.now())
+        val request = defaultTransferRequest(BigDecimal.valueOf(13))
+        val transferResult: TransferResult = transferService.transfer(request)
 
-        val transferResult: TransferResult = transferService.transfer(defaultTransferRequest(BigDecimal.valueOf(13)))
+        with(transferResult) {
+            assertThat(state).isEqualTo(COMPLETED)
+            assertThat(requestId).isEqualTo(request.requestId)
+        }
 
-        assertThat(transferResult).isEqualTo(TransferSuccessful("Success"))
         testDb.dbi.useHandle { handle ->
             val accountRepository: AccountRepository = handle.attach(AccountRepository::class.java)
             val janeAccount: Account = accountRepository.find(sortCode = Jane_Account_Sort_Code, accountNumber = Jane_Account_Number)
@@ -51,35 +55,41 @@ internal class TransferServiceTest : BaseTestSetup() {
 
     @Test
     fun `should create transactions when transferred`() {
-        whenever(idGenerator.generateId()).thenReturn(UUID.randomUUID().toString()).thenReturn(UUID.randomUUID().toString())
-        whenever(timeService.now()).thenReturn(Instant.now())
+        val request = defaultTransferRequest(BigDecimal.valueOf(13.500))
+        val transferResult: TransferResult = transferService.transfer(request)
 
-        val transferResult: TransferResult = transferService.transfer(defaultTransferRequest(BigDecimal.valueOf(13.500)))
+        with(transferResult) {
+            assertThat(state).isEqualTo(COMPLETED)
+            assertThat(requestId).isEqualTo(request.requestId)
+        }
 
-        assertThat(transferResult).isEqualTo(TransferSuccessful("Success"))
 
         testDb.dbi.useHandle { h ->
             val janeTx: MutableMap<String, Any> = h.createQuery("select * from transactions where account_id = :accountId")
                     .bind("accountId", janeAccount.id)
                     .first()
-            assertThat(janeTx["amount"]).isEqualTo(BigDecimal("13.50"))
+            assertThat(janeTx["amount"]).isEqualTo(BigDecimal("13.500"))
             assertThat(janeTx["type"]).isEqualTo("OUT")
-            assertThat(janeTx["reference"]).isEqualTo("Thanks")
+            assertThat(janeTx["description"]).isEqualTo("Transfer from Jane to Bob")
+            assertThat(janeTx["transfer_request_id"]).isEqualTo(request.requestId)
 
             val bobTx: MutableMap<String, Any> = h.createQuery("select * from transactions where account_id = :accountId")
                     .bind("accountId", bobAccount.id)
                     .first()
-            assertThat(bobTx["amount"]).isEqualTo(BigDecimal("13.50"))
+            assertThat(bobTx["amount"]).isEqualTo(BigDecimal("13.500"))
             assertThat(bobTx["type"]).isEqualTo("IN")
-            assertThat(bobTx["reference"]).isEqualTo("Thanks")
+            assertThat(bobTx["description"]).isEqualTo("Transfer from Jane to Bob")
+            assertThat(bobTx["transfer_request_id"]).isEqualTo(request.requestId)
         }
     }
 
     @Test
     fun `should fail when from account doesn't have sufficient funds`() {
-        val transferResult: TransferResult = transferService.transfer(defaultTransferRequest(BigDecimal.valueOf(25)))
+        val request = defaultTransferRequest(BigDecimal.valueOf(25))
+        val expectedErrorMessage = ErrorDetail("source.account.insufficient-funds", "Transfer Failed")
+        val transferResult: TransferResult = transferService.transfer(request)
 
-        assertThat(transferResult).isEqualTo(TransferFailure(ErrorDetail("from.account.insufficient-funds", "Transfer Failed")))
+        assertThat(transferResult).isEqualTo(TransferFailure(request.requestId, expectedErrorMessage))
 
         testDb.dbi.useHandle { handle ->
             assertThat(transactionCount(handle)).isEqualTo(0)
@@ -97,12 +107,13 @@ internal class TransferServiceTest : BaseTestSetup() {
 
     @Test
     fun `should fail when from account does not exist`() {
-        val withNonExistentFromAccount: TransferRequest = defaultTransferRequest(BigDecimal.valueOf(20))
-                .copy(from = SortCodeAccountNumber("missing", "12345678"))
+        val withNonExistentSourceAccount: TransferRequest = defaultTransferRequest(BigDecimal.valueOf(20))
+                .copy(source = AccountIdentity("missing", "12345678"))
+        val expectedError = ErrorDetail("source.account.not-found", "Transfer Failed")
+        val transferResult: TransferResult = transferService.transfer(withNonExistentSourceAccount)
 
-        val transferResult: TransferResult = transferService.transfer(withNonExistentFromAccount)
+        assertThat(transferResult).isEqualTo(TransferFailure(withNonExistentSourceAccount.requestId, expectedError))
 
-        assertThat(transferResult).isEqualTo(TransferFailure(ErrorDetail("from.account.not-found", "Transfer Failed")))
         testDb.dbi.useHandle { h ->
             assertThat(transactionCount(h)).isEqualTo(0)
 
@@ -117,12 +128,14 @@ internal class TransferServiceTest : BaseTestSetup() {
 
     @Test
     fun `should fail when to account does not exist`() {
-        val withNonExistentToAccount: TransferRequest = defaultTransferRequest(BigDecimal.valueOf(20))
-                .copy(to = SortCodeAccountNumber("missing", "87654321"))
+        val withNonExistentTargetAccount: TransferRequest = defaultTransferRequest(BigDecimal.valueOf(20))
+                .copy(target = AccountIdentity("missing", "87654321"))
+        val expectedError = ErrorDetail("target.account.not-found", "Transfer Failed")
 
-        val transferResult: TransferResult = transferService.transfer(withNonExistentToAccount)
+        val transferResult: TransferResult = transferService.transfer(withNonExistentTargetAccount)
 
-        assertThat(transferResult).isEqualTo(TransferFailure(ErrorDetail("to.account.not-found", "Transfer Failed")))
+        assertThat(transferResult).isEqualTo(TransferFailure(withNonExistentTargetAccount.requestId, expectedError))
+
         testDb.dbi.useHandle { h ->
             assertThat(transactionCount(h)).isEqualTo(0)
 

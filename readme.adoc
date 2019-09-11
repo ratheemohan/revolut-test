@@ -36,7 +36,7 @@ Build and run the project by using the below commands
 cd /<project_directory>
 mvn clean package
 cd target/
-java -jar transfer-service-1.0-SNAPSHOT.jar server ../config.yaml
+java -jar transfer-service-1.0-SNAPSHOT.jar
 ```
 
 == Why DropWizard?
