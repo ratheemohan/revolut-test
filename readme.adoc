@@ -29,6 +29,7 @@ Implicit requirements:
 - Ignored the currency conversions
 
 == Usage
+
 The app can be run on java 11 and below versions. Also, please note that there are warnings when the app starts up
 due to minor issue with version of jackson module being used. I choose to ignore the warnings for this test.
 
@@ -40,6 +41,16 @@ mvn clean package
 cd target/
 java -jar transfer-service-1.0-SNAPSHOT.jar
 ```
+
+== Tech stack
+
+- Kotlin
+- Dropwizard
+- JDBI
+- H2 (Inmemory database)
+- Maven
+- Liquibase
+- Junit 5
 
 == Why DropWizard?
 
