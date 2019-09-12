@@ -27,6 +27,7 @@ Implicit requirements:
 - Used UK bank accounts (sort code, account number)
 - Ignored validations of bank account number and sort code
 - Ignored the currency conversions
+- Kept it simple and just return 500 when payment fails. But the correct way is to return appropriate http status code based on the error
 
 == Usage
 
